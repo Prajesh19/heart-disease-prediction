@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❤️ Heart Disease Prediction</h1>
+            <p>Enter patient details to predict the risk of heart disease</p>
+        </div>
+
+        <form id="predictionForm" class="prediction-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" name="age" min="1" max="120" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="sex">Sex</label>
+                    <select id="sex" name="sex" required>
+                        <option value="">Select...</option>
+                        <option value="1">Male</option>
+                        <option value="0">Female</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="cp">Chest Pain Type</label>
+                    <select id="cp" name="cp" required>
+                        <option value="">Select...</option>
+                        <option value="0">Typical Angina</option>
+                        <option value="1">Atypical Angina</option>
+                        <option value="2">Non-anginal Pain</option>
+                        <option value="3">Asymptomatic</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="trestbps">Resting Blood Pressure (mm Hg)</label>
+                    <input type="number" id="trestbps" name="trestbps" min="80" max="200" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="chol">Serum Cholesterol (mg/dl)</label>
+                    <input type="number" id="chol" name="chol" min="100" max="600" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fbs">Fasting Blood Sugar > 120 mg/dl</label>
+                    <select id="fbs" name="fbs" required>
+                        <option value="">Select...</option>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="restecg">Resting ECG Results</label>
+                    <select id="restecg" name="restecg" required>
+                        <option value="">Select...</option>
+                        <option value="0">Normal</option>
+                        <option value="1">ST-T Wave Abnormality</option>
+                        <option value="2">Left Ventricular Hypertrophy</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="thalach">Max Heart Rate Achieved</label>
+                    <input type="number" id="thalach" name="thalach" min="60" max="220" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="exang">Exercise Induced Angina</label>
+                    <select id="exang" name="exang" required>
+                        <option value="">Select...</option>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="oldpeak">ST Depression (Oldpeak)</label>
+                    <input type="number" id="oldpeak" name="oldpeak" step="0.1" min="0" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="slope">Slope of Peak Exercise ST Segment</label>
+                    <select id="slope" name="slope" required>
+                        <option value="">Select...</option>
+                        <option value="0">Upsloping</option>
+                        <option value="1">Flat</option>
+                        <option value="2">Downsloping</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="ca">Number of Major Vessels (0-3)</label>
+                    <input type="number" id="ca" name="ca" min="0" max="3" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="thal">Thalassemia</label>
+                    <select id="thal" name="thal" required>
+                        <option value="">Select...</option>
+                        <option value="0">Normal</option>
+                        <option value="1">Fixed Defect</option>
+                        <option value="2">Reversible Defect</option>
+                        <option value="3">Not Available</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Predict Heart Disease</button>
+        </form>
+
+        <div id="result" class="result hidden">
+            <div class="result-content">
+                <h2 id="resultMessage"></h2>
+                <p class="probability">Probability: <span id="probability"></span>%</p>
+                <button onclick="resetForm()" class="reset-btn">Predict Another</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Analyzing patient data...</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            const submitBtn = form.querySelector('.submit-btn');
+            
+            // Show loading, hide result
+            loadingDiv.classList.remove('hidden');
+            resultDiv.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Display result
+                const resultMessage = document.getElementById('resultMessage');
+                const probability = document.getElementById('probability');
+                
+                resultMessage.textContent = data.message;
+                probability.textContent = data.probability;
+                
+                // Add appropriate class based on prediction
+                resultDiv.className = 'result';
+                if (data.prediction === 1) {
+                    resultDiv.classList.add('positive');
+                } else {
+                    resultDiv.classList.add('negative');
+                }
+                
+                resultDiv.classList.remove('hidden');
+                
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                loadingDiv.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Predict Heart Disease';
+            }
+        });
+        
+        function resetForm() {
+            document.getElementById('predictionForm').reset();
+            document.getElementById('result').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
+
